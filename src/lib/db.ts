@@ -1,6 +1,13 @@
 import Dexie, { type Table } from "dexie";
 
-export type AlertType = "suspicious" | "theft" | "hazard" | "missing" | "emergency" | "other";
+export type AlertType =
+  | "suspicious"
+  | "theft"
+  | "hazard"
+  | "missing"
+  | "emergency"
+  | "other";
+
 export type Urgency = "low" | "med" | "high";
 export type AlertStatus = "active" | "monitoring" | "resolved";
 
@@ -18,71 +25,51 @@ export interface Alert {
 
 export interface Thread {
   id: string;
+  type: "group" | "dm";
   title: string;
-  participantIds: string[];
-  createdAt: number;
+  subtitle?: string; // e.g. "75 members online"
   updatedAt: number;
   lastMessageAt?: number;
-  lastMessagePreview?: string;
 }
 
 export interface Message {
   id: string;
   threadId: string;
-  senderId: string;
-  content: string;
+  senderName: string;
+  body: string;
   createdAt: number;
+  // "me" drives right-side bubble styling
+  isMe: boolean;
+}
+
+export interface SettingKV {
+  key: string;
+  value: any;
 }
 
 export class WatchDB extends Dexie {
   alerts!: Table<Alert, string>;
   threads!: Table<Thread, string>;
   messages!: Table<Message, string>;
+  settings!: Table<SettingKV, string>;
 
   constructor() {
     super("watch_db");
+
+    // v1 had only alerts
     this.version(1).stores({
       alerts: "id, status, createdAt, urgency, type",
-      threads: "id, participantIds, createdAt, updatedAt, lastMessageAt",
-      messages: "id, threadId, senderId, createdAt",
+    });
+
+    // v2 adds chats + settings
+    this.version(2).stores({
+      alerts: "id, status, createdAt, urgency, type",
+      threads: "id, type, updatedAt, lastMessageAt",
+      messages: "id, threadId, createdAt, isMe",
+      settings: "key",
     });
   }
 }
 
 export const db = new WatchDB();
 
-const SEED_KEY = "watch_seeded_v1";
-
-export async function ensureSeeded() {
-  if (typeof window === "undefined") return;
-
-  const seeded = localStorage.getItem(SEED_KEY);
-  if (seeded) return;
-
-  await db.alerts.bulkAdd([
-    {
-      id: crypto.randomUUID(),
-      type: "suspicious",
-      urgency: "high",
-      status: "active",
-      title: "Suspicious activity reported",
-      description: "Unfamiliar vehicle circling the block. Stay aware and report details.",
-      createdAt: Date.now() - 1000 * 60 * 12,
-      createdBy: "System",
-      origin: "official",
-    },
-    {
-      id: crypto.randomUUID(),
-      type: "hazard",
-      urgency: "med",
-      status: "monitoring",
-      title: "Road hazard",
-      description: "Debris reported near the main entrance. Drive carefully.",
-      createdAt: Date.now() - 1000 * 60 * 50,
-      createdBy: "System",
-      origin: "official",
-    },
-  ]);
-
-  localStorage.setItem(SEED_KEY, "1");
-}

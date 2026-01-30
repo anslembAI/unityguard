@@ -4,16 +4,26 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Alert } from "@/lib/db/schema";
 import { ensureSeeded } from "@/lib/db/seed";
+import { TopBarHome } from "@/components/layout/top-bars";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Pencil } from "lucide-react";
 
 function UrgencyBadge({ urgency }: { urgency: Alert["urgency"] }) {
   const label = urgency.toUpperCase();
-  return <Badge variant={urgency === "high" ? "destructive" : urgency === "med" ? "secondary" : "outline"}>{label}</Badge>;
+  return (
+    <Badge
+      variant={
+        urgency === "high" ? "destructive" : urgency === "med" ? "secondary" : "outline"
+      }
+    >
+      {label}
+    </Badge>
+  );
 }
 
 export default function AlertsPage() {
@@ -33,7 +43,7 @@ export default function AlertsPage() {
   const [type, setType] = useState<Alert["type"]>("suspicious");
   const [urgency, setUrgency] = useState<Alert["urgency"]>("med");
 
-  async function createLocalAlert() {
+  async function createLocalReport() {
     if (!title.trim()) return;
 
     await db.alerts.add({
@@ -56,14 +66,35 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">Active & recent updates</div>
+    <div>
+      <TopBarHome />
+
+      <div className="mx-auto max-w-md space-y-3 px-4 py-4">
+        <div className="text-sm text-muted-foreground">Active & Recent Alerts</div>
+
+        {alerts.map((a) => (
+          <Card key={a.id} className="border-muted/60 bg-muted/20 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <div className="text-base font-semibold leading-tight">{a.title}</div>
+                <div className="text-sm text-muted-foreground">{a.description || "—"}</div>
+                <div className="text-xs text-muted-foreground">
+                  ● {a.origin === "official" ? "Official" : "Community"} • {a.type}
+                </div>
+              </div>
+              <UrgencyBadge urgency={a.urgency} />
+            </div>
+          </Card>
+        ))}
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">New Report</Button>
+            <Button className="w-full" variant="secondary">
+              <Pencil className="mr-2 h-4 w-4" />
+              New Report
+            </Button>
           </DialogTrigger>
+
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Community Report</DialogTitle>
@@ -77,7 +108,6 @@ export default function AlertsPage() {
                     className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                     value={type}
                     onChange={(e) => setType(e.target.value as Alert["type"])}
-                    aria-label="Alert type"
                   >
                     <option value="suspicious">Suspicious</option>
                     <option value="theft">Theft</option>
@@ -94,7 +124,6 @@ export default function AlertsPage() {
                     className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                     value={urgency}
                     onChange={(e) => setUrgency(e.target.value as Alert["urgency"])}
-                    aria-label="Alert urgency"
                   >
                     <option value="low">Low</option>
                     <option value="med">Medium</option>
@@ -104,35 +133,20 @@ export default function AlertsPage() {
               </div>
 
               <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-              <Textarea placeholder="Details (what happened?)" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Textarea
+                placeholder="Details (what happened?)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              <Button onClick={createLocalReport}>Submit</Button>
 
-              <Button onClick={createLocalAlert}>Submit</Button>
               <p className="text-xs text-muted-foreground">
-                This MVP saves locally. Next step is routing reports to a Mod Queue + sending official alerts.
+                MVP behavior: saves locally. Next step: route reports to a Mod Queue and publish official alerts.
               </p>
             </div>
           </DialogContent>
         </Dialog>
       </div>
-
-      {alerts.length === 0 ? (
-        <Card className="p-4 text-sm text-muted-foreground">No alerts yet.</Card>
-      ) : (
-        alerts.map((a) => (
-          <Card key={a.id} className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <div className="font-medium leading-tight">{a.title}</div>
-                <div className="text-sm text-muted-foreground">{a.description || "—"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {a.origin === "official" ? "Official" : "Community"} • {a.type}
-                </div>
-              </div>
-              <UrgencyBadge urgency={a.urgency} />
-            </div>
-          </Card>
-        ))
-      )}
     </div>
   );
 }

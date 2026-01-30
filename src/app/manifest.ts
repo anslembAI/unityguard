@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Neighborhood Watch",
-    short_name: "Watch",
-    description: "Community alerts + chat (local-first)",
+    name: "UnityGuard",
+    short_name: "UnityGuard",
+    description: "Local Safety Network",
     start_url: "/alerts",
     display: "standalone",
     background_color: "#0b1220",
