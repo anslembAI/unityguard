@@ -1,10 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Neighborhood Watch",
   description: "Community alerts + chat (local-first)",
   applicationName: "Neighborhood Watch",
+};
+
+export const viewport: Viewport = {
   themeColor: "#0b1220",
 };
 
