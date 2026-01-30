@@ -18,11 +18,18 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/db/schema";
+
 export default function MorePage() {
   // Push
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [msg, setMsg] = useState("Test alert from UnityGuard");
+
+  // Profile
+  const profile = useLiveQuery(() => db.settings.get("user_avatar"));
+  const avatarUrl = profile?.value as string | undefined;
 
   // Backup
   const [pass, setPass] = useState("");
@@ -109,6 +116,58 @@ export default function MorePage() {
       <TopBarTitle title="More" />
 
       <div className="mx-auto max-w-md space-y-3 px-4 py-4">
+        {/* Account Card */}
+        <Card className="border-muted/60 bg-muted/20 p-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="relative group cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="avatar-upload"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (!file.type.startsWith("image/")) return;
+
+                  const reader = new FileReader();
+                  reader.onload = async (ev) => {
+                    const base64 = ev.target?.result as string;
+                    await db.settings.put({ key: "user_avatar", value: base64 });
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <label htmlFor="avatar-upload" className="cursor-pointer">
+                <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-background shadow-sm bg-muted flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="text-2xl text-muted-foreground">👤</div>
+                  )}
+                </div>
+                <div className="absolute bottom-0 right-0 rounded-full bg-primary p-1 text-primary-foreground shadow-sm">
+                  <Upload className="h-3 w-3" />
+                </div>
+              </label>
+            </div>
+
+            <div className="flex-1 space-y-1">
+              <div className="font-semibold leading-none">My Account</div>
+              <div className="text-sm text-muted-foreground">Manage your profile</div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button asChild variant="secondary" className="flex-1">
+              <a href="/login">Sign In</a>
+            </Button>
+            <Button asChild variant="outline" className="flex-1">
+              <a href="/register">Sign Up</a>
+            </Button>
+          </div>
+        </Card>
+
         {/* Moderator Card */}
         <Card className="border-muted/60 bg-muted/20 p-4 space-y-2">
           <div className="font-semibold">Moderator</div>

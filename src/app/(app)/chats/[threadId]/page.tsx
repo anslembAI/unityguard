@@ -26,6 +26,10 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
 
   const [text, setText] = useState("");
 
+  // Avatar
+  const profile = useLiveQuery(() => db.settings.get("user_avatar"));
+  const avatarUrl = profile?.value as string | undefined;
+
   const subtitle = useMemo(() => thread?.subtitle || "", [thread?.subtitle]);
 
   async function send() {
@@ -82,9 +86,15 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
 
         <div className="space-y-3">
           {messages.map((m) => (
-            <div key={m.id} className={`flex ${m.isMe ? "justify-end" : "justify-start"}`}>
+            <div key={m.id} className={`flex items-end gap-2 ${m.isMe ? "justify-end" : "justify-start"}`}>
+              {!m.isMe && (
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">
+                  {m.senderName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+
               <div
-                className={`max-w-[85%] space-y-1 rounded-2xl px-3 py-2 text-sm ${m.isMe ? "bg-primary text-primary-foreground" : "bg-muted/30 text-foreground"
+                className={`max-w-[75%] space-y-1 rounded-2xl px-3 py-2 text-sm ${m.isMe ? "bg-primary text-primary-foreground" : "bg-muted/30 text-foreground"
                   }`}
               >
                 {!m.isMe ? (
@@ -97,6 +107,16 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
 
                 <div>{m.body}</div>
               </div>
+
+              {m.isMe && (
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px]">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Me" className="h-full w-full object-cover" />
+                  ) : (
+                    "You"
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

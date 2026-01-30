@@ -26,6 +26,7 @@ export default function ModQueuePage() {
     async function publish(r: Report) {
         // 1) Create an official alert locally
         const alertId = crypto.randomUUID();
+        const now = Date.now();
         await db.alerts.add({
             id: alertId,
             type: r.type,
@@ -33,7 +34,7 @@ export default function ModQueuePage() {
             status: "active",
             title: r.title,
             description: r.description,
-            createdAt: Date.now(),
+            createdAt: now,
             createdBy: "Moderator",
             origin: "official",
         });
