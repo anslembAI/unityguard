@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, use, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Message } from "@/lib/db/schema";
 import { ensureSeeded } from "@/lib/db/seed";
+import { getClientId, channelName, publish, subscribe, history } from "@/lib/realtime/ably";
+import { getDisplayName } from "@/lib/profile";
 import { TopBarChat } from "@/components/layout/top-bars";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,10 +14,43 @@ import { Paperclip, Send } from "lucide-react";
 export default function ChatThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
   const { threadId } = use(params);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     ensureSeeded();
   }, []);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = channelName("chat", threadId);
+
+    // Subscribe to incoming messages
+    const unsubscribe = subscribe(channel, "message_created", async (msg) => {
+      const data = msg.data as Message & { senderId: string };
+
+      // Ignore our own messages (handled optimistically)
+      if (data.senderId === getClientId()) return;
+
+      await db.messages.put({
+        ...data,
+        isMe: false,
+      });
+
+      await db.threads.update(threadId, {
+        updatedAt: Date.now(),
+        lastMessageAt: Date.now(),
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [threadId]);
 
   const thread = useLiveQuery(() => db.threads.get(threadId), [threadId]);
   const messages = useLiveQuery(
@@ -23,6 +58,12 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
     [threadId],
     [] as Message[]
   );
+
+  useEffect(() => {
+    if (messages?.length) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages?.length]);
 
   const [text, setText] = useState("");
 
@@ -33,28 +74,52 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
   const subtitle = useMemo(() => thread?.subtitle || "", [thread?.subtitle]);
 
   async function send() {
-    if (!text.trim()) return;
-    await sendMessage(text.trim());
-    setText("");
-  }
+    const body = text.trim();
+    if (!body) return;
 
-  async function sendMessage(body: string, attachment?: string) {
-    if (!body && !attachment) return;
+    const senderName = await getDisplayName(); // This is async now
+    const senderId = getClientId();
 
-    await db.messages.add({
+    const message = {
       id: crypto.randomUUID(),
       threadId,
-      senderName: "You",
+      senderId,
+      senderName,
       body,
-      attachment,
       createdAt: Date.now(),
-      isMe: true,
-    });
+    };
+
+    // local-first write
+    await db.messages.put({ ...message, isMe: true });
 
     await db.threads.update(threadId, {
       updatedAt: Date.now(),
       lastMessageAt: Date.now(),
     });
+
+    // realtime publish
+    await publish(channelName("chat", threadId), "message_created", message);
+
+    setText("");
+  }
+
+  async function sendImage(base64: string) {
+    const senderName = await getDisplayName();
+    const senderId = getClientId();
+
+    const message = {
+      id: crypto.randomUUID(),
+      threadId,
+      senderId,
+      senderName,
+      body: "Sent an image",
+      attachment: base64,
+      createdAt: Date.now(),
+    };
+
+    await db.messages.put({ ...message, isMe: true });
+    await db.threads.update(threadId, { updatedAt: Date.now(), lastMessageAt: Date.now() });
+    await publish(channelName("chat", threadId), "message_created", message);
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -69,7 +134,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const base64 = ev.target?.result as string;
-      await sendMessage("Sent an image", base64);
+      await sendImage(base64);
     };
     reader.readAsDataURL(file);
     e.target.value = ""; // reset
@@ -119,6 +184,7 @@ export default function ChatThreadPage({ params }: { params: Promise<{ threadId:
               )}
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 

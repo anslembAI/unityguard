@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { saveProfile } from "@/lib/profile";
+
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
@@ -20,7 +22,8 @@ export default function LoginPage() {
         setLoading(true);
         try {
             const res = await login(email, pass);
-            if (res.success) {
+            if (res.success && res.user) {
+                saveProfile(res.user);
                 router.push("/alerts"); // Redirect to home
             } else {
                 alert(res.message);

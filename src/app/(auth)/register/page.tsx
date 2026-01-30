@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { saveProfile } from "@/lib/profile";
+
 export default function RegisterPage() {
     const router = useRouter();
     const [step, setStep] = useState<"details" | "otp">("details");
@@ -24,7 +26,7 @@ export default function RegisterPage() {
             const res = await sendSecurityCode(email);
             if (res.success) {
                 setStep("otp");
-                alert("Check your server console (terminal) for the mock code!");
+                alert("Check your server console for the security code!");
             } else {
                 alert(res.message);
             }
@@ -38,7 +40,8 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             const res = await verifyAndRegister(email, pass, code);
-            if (res.success) {
+            if (res.success && res.user) {
+                saveProfile(res.user);
                 router.push("/alerts"); // Redirect to home/alerts
             } else {
                 alert(res.message);

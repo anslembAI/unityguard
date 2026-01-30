@@ -64,7 +64,9 @@ export default function MorePage() {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     await sub?.unsubscribe();
-    await unsubscribeUser();
+    if (sub?.endpoint) {
+      await unsubscribeUser(sub.endpoint);
+    }
     setSubscribed(false);
   }
 
