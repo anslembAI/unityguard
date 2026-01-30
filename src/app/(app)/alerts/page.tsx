@@ -46,16 +46,15 @@ export default function AlertsPage() {
   async function createLocalReport() {
     if (!title.trim()) return;
 
-    await db.alerts.add({
+    await db.reports.add({
       id: crypto.randomUUID(),
       type,
       urgency,
-      status: "active",
       title: title.trim(),
       description: description.trim(),
       createdAt: Date.now(),
       createdBy: "You",
-      origin: "community",
+      status: "pending",
     });
 
     setTitle("");
@@ -63,6 +62,8 @@ export default function AlertsPage() {
     setType("suspicious");
     setUrgency("med");
     setOpen(false);
+
+    alert("Report submitted to moderators for review.");
   }
 
   return (

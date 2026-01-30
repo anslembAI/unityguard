@@ -44,7 +44,18 @@ export interface Message {
 
 export interface SettingKV {
   key: string;
-  value: any;
+  value: unknown;
+}
+
+export interface Report {
+  id: string;
+  type: AlertType;
+  urgency: Urgency;
+  title: string;
+  description: string;
+  createdAt: number;
+  createdBy: string;
+  status: "pending" | "need_info" | "dismissed" | "published";
 }
 
 export class WatchDB extends Dexie {
@@ -52,6 +63,7 @@ export class WatchDB extends Dexie {
   threads!: Table<Thread, string>;
   messages!: Table<Message, string>;
   settings!: Table<SettingKV, string>;
+  reports!: Table<Report, string>; // moderator queue (local only for now)
 
   constructor() {
     super("watch_db");
@@ -61,11 +73,12 @@ export class WatchDB extends Dexie {
       alerts: "id, status, createdAt, urgency, type",
     });
 
-    // v2 adds chats + settings
+    // v2 adds chats + settings + reports
     this.version(2).stores({
       alerts: "id, status, createdAt, urgency, type",
       threads: "id, type, updatedAt, lastMessageAt",
       messages: "id, threadId, createdAt, isMe",
+      reports: "id, status, createdAt, urgency, type",
       settings: "key",
     });
   }

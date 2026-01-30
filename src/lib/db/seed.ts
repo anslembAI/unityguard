@@ -74,5 +74,17 @@ export async function ensureSeeded() {
         },
     ]);
 
+    // Seed a pending report for the Moderator view
+    await db.reports.add({
+        id: crypto.randomUUID(),
+        type: "suspicious",
+        urgency: "med",
+        title: "Possible suspicious person",
+        description: "Someone walking slowly and checking gates near the corner house.",
+        createdAt: now - 1000 * 60 * 20,
+        createdBy: "Resident",
+        status: "pending",
+    });
+
     localStorage.setItem(SEED_KEY, "1");
 }
