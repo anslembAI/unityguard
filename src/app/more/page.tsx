@@ -14,7 +14,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function MorePage() {
-  const [supported, setSupported] = useState(
+  const [supported] = useState(
     typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window
   );
   const [subscribed, setSubscribed] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,7 @@ export default function ThreadPage({ params }: { params: { threadId: string } })
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadThread();
-    loadMessages();
-  }, [threadId]);
-
-  async function loadThread() {
+  const loadThread = useCallback(async () => {
     try {
       const loadedThread = await db.threads.get(threadId);
       setThread(loadedThread || null);
@@ -30,16 +25,21 @@ export default function ThreadPage({ params }: { params: { threadId: string } })
     } finally {
       setLoading(false);
     }
-  }
+  }, [threadId]);
 
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     try {
       const allMessages = await db.messages.where("threadId").equals(threadId).toArray();
       setMessages(allMessages.sort((a, b) => a.createdAt - b.createdAt));
     } catch (error) {
       console.error("Failed to load messages:", error);
     }
-  }
+  }, [threadId]);
+
+  useEffect(() => {
+    loadThread();
+    loadMessages();
+  }, [loadThread, loadMessages]);
 
   async function sendMessage() {
     if (!newMessage.trim() || !thread) return;

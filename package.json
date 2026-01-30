@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate-vapid": "node scripts/generate-vapid-keys.js"
+    "generate-vapid": "node scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
