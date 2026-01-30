@@ -37,6 +37,7 @@ export interface Message {
   threadId: string;
   senderName: string;
   body: string;
+  attachment?: string; // base64 data url for images
   createdAt: number;
   // "me" drives right-side bubble styling
   isMe: boolean;
