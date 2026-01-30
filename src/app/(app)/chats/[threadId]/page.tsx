@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, use } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Message } from "@/lib/db/schema";
 import { ensureSeeded } from "@/lib/db/seed";
@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Send } from "lucide-react";
 
-export default function ChatThreadPage({ params }: { params: { threadId: string } }) {
-  const { threadId } = params;
+export default function ChatThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
+  const { threadId } = use(params);
 
   useEffect(() => {
     ensureSeeded();
